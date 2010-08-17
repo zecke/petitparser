@@ -27,6 +27,10 @@ Symbol extend [
 	^PPPredicateObjectParser perform: self
     ]
 
+    value: anObject [
+	<category: '*petitparser-core-converting-gst'>
+	anObject perform: self.
+    ]
 ]
 
 
