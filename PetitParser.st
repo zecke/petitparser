@@ -977,7 +977,7 @@ The start production is defined in the method start. It is aliased to the inst-v
 	ignoredVariableNames := self class ignoredNames.
 	productionIndexesAndNames := ((1 to: self class instSize) 
 		    collect: [:index | index -> (allVariableNames at: index) asSymbol]) 
-			reject: [:assoc | ignoredVariableNames includes: assoc value asString].
+			reject: [:assoc | ignoredVariableNames includes: assoc value asSymbol].
 
 	"initialize productions with an undefined parser to be replaced later"
 	parser := PPUnresolvedParser named: aSymbol.
