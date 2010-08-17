@@ -42,17 +42,6 @@ Set extend [
 
 
 
-Text extend [
-
-    asPetitStream [
-	<category: '*petitparser-core'>
-	^string asPetitStream
-    ]
-
-]
-
-
-
 BlockContext extend [
 
     asParser [

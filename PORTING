@@ -3,3 +3,4 @@ to the GNU Smalltalk System. This document holds the information
 of how it was converted.
 
 0.) basic gst-convert to translate from Squeak to GST
+1.) Text does not exist, remove code related to it.

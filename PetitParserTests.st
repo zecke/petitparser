@@ -991,13 +991,6 @@ PPAbstractParseTest subclass: PPExtensionTest [
 	self assert: parser fail: ''
     ]
 
-    testText [
-	<category: 'testing-stream'>
-	| stream |
-	stream := 'abc' asText asPetitStream.
-	self assert: stream class = PPStream
-    ]
-
     testUnordered [
 	<category: 'testing-parser'>
 	| parser |
