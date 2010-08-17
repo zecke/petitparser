@@ -1,0 +1,5 @@
+This is a port of PetitParser-lr.190.mcz and PetitTests-lr.8.mcz
+to the GNU Smalltalk System. This document holds the information
+of how it was converted.
+
+0.) basic gst-convert to translate from Squeak to GST
