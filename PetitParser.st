@@ -1120,7 +1120,7 @@ Instance Variables:
 	<category: 'private'>
 	^aChoiceParser star , aParser map: 
 		[:ops :term | 
-		ops reversed inject: term
+		ops reverse inject: term
 		    into: [:result :operator | operator first value: operator second value: result]]
     ]
 

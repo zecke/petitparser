@@ -7,6 +7,7 @@ of how it was converted.
 2.) asString -> asSymbol for all codes.
 3.) maxVal -> largest
 4.) Symbol>>value added for compability
+5.) reversed -> reverse
 
 
 Testing the port...
