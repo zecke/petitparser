@@ -1377,7 +1377,7 @@ PPDelegateParser subclass: PPRepeatingParser [
     | min max |
     
     <category: 'PetitParser-Parsers'>
-    <comment: 'A parser that eagerly parses min to max instances of my delegate. The default instance parses eagerly an infinite number of elements, as min is set to 0 and max to infinity (SmallInteger maxVal).
+    <comment: 'A parser that eagerly parses min to max instances of my delegate. The default instance parses eagerly an infinite number of elements, as min is set to 0 and max to infinity (SmallInteger largest).
 
 Instance Variables:
 	min	<Integer>	The minimum number of repetitions.
@@ -1385,7 +1385,7 @@ Instance Variables:
 
     PPRepeatingParser class >> on: aParser [
 	<category: 'instance creation'>
-	^(super on: aParser) setMin: 0 max: SmallInteger maxVal
+	^(super on: aParser) setMin: 0 max: SmallInteger largest
     ]
 
     PPRepeatingParser class >> on: aParser max: aMaxInteger [
@@ -1395,7 +1395,7 @@ Instance Variables:
 
     PPRepeatingParser class >> on: aParser min: aMinInteger [
 	<category: 'instance creation'>
-	^(self on: aParser) setMin: aMinInteger max: SmallInteger maxVal
+	^(self on: aParser) setMin: aMinInteger max: SmallInteger largest
     ]
 
     PPRepeatingParser class >> on: aParser min: aMinInteger max: aMaxInteger [
@@ -1442,7 +1442,7 @@ Instance Variables:
 	    nextPutAll: ' [';
 	    print: min;
 	    nextPutAll: ', ';
-	    nextPutAll: (max = SmallInteger maxVal 
+	    nextPutAll: (max = SmallInteger largest
 			ifTrue: ['*']
 			ifFalse: [max printString]);
 	    nextPut: $]

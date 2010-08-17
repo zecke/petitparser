@@ -5,6 +5,7 @@ of how it was converted.
 0.) basic gst-convert to translate from Squeak to GST
 1.) Text does not exist, remove code related to it.
 2.) asString -> asSymbol for all codes.
+3.) maxVal -> largest
 
 
 Testing the port...
