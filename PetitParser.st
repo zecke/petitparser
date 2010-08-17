@@ -1004,10 +1004,10 @@ The start production is defined in the method start. It is aliased to the inst-v
 	"Answer the production named aSymbol, if there is no such production answer the result of evaluating aBlock."
 
 	<category: 'querying'>
-	(self class ignoredNames includes: aSymbol asString) 
+	(self class ignoredNames includes: aSymbol asSymbol) 
 	    ifTrue: [^aBlock value].
 	self class startSymbol = aSymbol ifTrue: [^parser].
-	^self instVarAt: (self class allInstVarNames indexOf: aSymbol asString
+	^self instVarAt: (self class allInstVarNames indexOf: aSymbol asSymbol
 		    ifAbsent: [^aBlock value])
     ]
 
