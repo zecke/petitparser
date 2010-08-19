@@ -1,0 +1,23 @@
+<package>
+  <name>PetitParser</name>
+
+  <filein>PetitParser.st</filein>
+
+  <test>
+    <sunit>PPComposedTest</sunit>
+    <sunit>PPExtensionTest</sunit>
+    <sunit>PPMappingTest</sunit>
+    <sunit>PPParserTest</sunit>
+    <sunit>PPPredicateTest</sunit>
+    <sunit>PPScriptingTest</sunit>
+    <sunit>PPTokenTest</sunit>
+    <sunit>PPCompositeParserTest</sunit>
+    <sunit>PPArithmeticParserTest</sunit>
+    <sunit>PPExpressionParserTest</sunit>
+    <sunit>PPLambdaParserTest</sunit>
+    <filein>PetitParserTests.st</filein>
+  </test>
+
+  <file>PetitParser.st</file>
+  <file>PetitParserTests.st</file>
+</package>
