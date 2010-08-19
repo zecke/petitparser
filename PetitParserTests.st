@@ -3537,7 +3537,7 @@ PPCompositeParserTest subclass: PPArithmeticParserTest [
     testSub [
 	<category: 'testing-operations'>
 	self assert: '1 - 2' is: -1.
-	self assert: '1.3 - 2' is: -0.7000000000000001.
+	self assert: '1.3 - 2' is: -0.7.
 	self assert: '1 - -2' is: 3.
 	self assert: '-1 - -2' is: 1
     ]
