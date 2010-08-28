@@ -5,6 +5,24 @@ String extend [
 	^PPLiteralSequenceParser on: self
     ]
 
+    beginsWith: aString [
+	<category: '*petitparser-core-converting-gst'>
+	| res |
+
+	res := self indexOf: aString matchCase: false startingAt: 1.
+	res ifNil: [^false].
+
+	^ res first = 1
+    ]
+
+    includesSubString: subString [
+	| res |
+
+	res := self indexOf: subString matchCase: false startingAt: 1.
+	res ifNil: [^false].
+
+	^ res first > 1
+    ]
 ]
 
 
@@ -33,6 +51,11 @@ Symbol extend [
     ]
 ]
 
+Character extend [
+    sameAs: aChar [
+	^self asLowercase = aChar asLowercase.
+    ]
+]
 
 
 Set extend [
