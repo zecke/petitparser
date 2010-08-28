@@ -184,7 +184,7 @@ PPAbstractParseTest subclass: PPComposedTest [
 	parser := ($' asParser 
 		    , (($' asParser , $' asParser) / $' asParser negate) star flatten 
 			, $' asParser) 
-			==> [:nodes | nodes second copyReplaceAll: '''''' with: ''''].
+			=> [:nodes | nodes second copyReplaceAll: '''''' with: ''''].
 	self 
 	    assert: parser
 	    parse: ''''''
@@ -327,9 +327,9 @@ PPAbstractParseTest subclass: PPComposedTest [
 	<category: 'testing'>
 	| number list parser |
 	number := #digit asParser plus token trim 
-		    ==> [:node | node value asInteger].
+		    => [:node | node value asInteger].
 	list := (number separatedBy: $, asParser token trim) 
-		    ==> [:node | node select: [:each | each isInteger]].
+		    => [:node | node select: [:each | each isInteger]].
 	parser := list end.
 	self 
 	    assert: parser
@@ -809,7 +809,7 @@ PPAbstractParseTest subclass: PPComposedTest [
 	number := #digit asParser plus token.
 	spaces := #space asParser star.
 	return := (spaces , $^ asParser token , spaces , number) 
-		    ==> [:nodes | Array with: #return with: (nodes at: 4) value].
+		    => [:nodes | Array with: #return with: (nodes at: 4) value].
 	self 
 	    assert: return
 	    parse: '^1'
@@ -1171,7 +1171,7 @@ PPAbstractParseTest subclass: PPParserTest [
 	<category: 'testing'>
 	| block parser |
 	block := [:char | char asUppercase].
-	parser := #any asParser ==> block.
+	parser := #any asParser => block.
 	self assert: parser block = block.
 	self 
 	    assert: parser
@@ -1232,7 +1232,7 @@ PPAbstractParseTest subclass: PPParserTest [
 	<category: 'testing-utilities'>
 	| p1 p2 p3 |
 	p1 := #lowercase asParser.
-	p2 := p1 ==> #asUppercase.
+	p2 := p1 => #asUppercase.
 	p3 := PPUnresolvedParser new.
 	p3 def: p2 / p3.
 	self assert: p1 children isEmpty.
@@ -2660,7 +2660,7 @@ a'
     testWrapping [
 	<category: 'testing'>
 	| parser result |
-	parser := #digit asParser plus >=> 
+	parser := #digit asParser plus >< 
 			[:stream :cc | 
 			Array 
 			    with: stream position
@@ -3179,15 +3179,15 @@ PPAbstractParseTest subclass: PPScriptingTest [
 	add := PPUnresolvedParser new.
 	mul := PPUnresolvedParser new.
 	prim := PPUnresolvedParser new.
-	dec := $0 - $9 ==> [:token | token codePoint - $0 codePoint].
+	dec := $0 - $9 => [:token | token codePoint - $0 codePoint].
 	add 
 	    def: ((mul , $+ asParser , add) 
-		    ==> [:nodes | (nodes at: 1) + (nodes at: 3)]) / mul.
+		    => [:nodes | (nodes at: 1) + (nodes at: 3)]) / mul.
 	mul 
 	    def: ((prim , $* asParser , mul) 
-		    ==> [:nodes | (nodes at: 1) * (nodes at: 3)]) / prim.
+		    => [:nodes | (nodes at: 1) * (nodes at: 3)]) / prim.
 	prim 
-	    def: (($( asParser , add , $) asParser) ==> [:nodes | nodes at: 2]) / dec.
+	    def: (($( asParser , add , $) asParser) => [:nodes | nodes at: 2]) / dec.
 	^add end
     ]
 
@@ -3569,10 +3569,10 @@ PPArithmeticParserTest subclass: PPExpressionParserTest [
 	| expression parens number |
 	expression := PPExpressionParser new.
 	parens := ($( asParser token trim , expression , $) asParser token trim) 
-		    ==> [:nodes | nodes second].
+		    => [:nodes | nodes second].
 	number := (#digit asParser plus 
 		    , ($. asParser , #digit asParser plus) optional) token 
-		    trim ==> [:token | token value asNumber].
+		    trim => [:token | token value asNumber].
 	expression term: parens / number.
 	expression
 	    group: [:g | g prefix: $- asParser token trim do: [:op :a | a negated]];
@@ -3789,12 +3789,12 @@ PPCompositeParser subclass: PPArithmeticParser [
 	<category: 'grammar'>
 	^($- asParser optional , #digit asParser plus 
 	    , ($. asParser , #digit asParser plus) optional) token 
-	    trim ==> [:token | token value asNumber]
+	    trim => [:token | token value asNumber]
     ]
 
     parentheses [
 	<category: 'grammar'>
-	^($( asParser flatten trim , terms , $) asParser flatten trim) ==> #second
+	^($( asParser flatten trim , terms , $) asParser flatten trim) => #second
     ]
 
     power [
@@ -3860,14 +3860,14 @@ PPCompositeParser subclass: PPLambdaParser [
     abstraction [
 	<category: 'productions'>
 	^($\ asParser token trim , variable , $. asParser token trim , expression) 
-	    ==> [:node | Array with: node second with: node fourth]
+	    => [:node | Array with: node second with: node fourth]
     ]
 
     application [
 	<category: 'productions'>
 	^($( asParser token trim , expression , expression 
 	    , $) asParser token trim) 
-		==> [:node | Array with: node second with: node third]
+		=> [:node | Array with: node second with: node third]
     ]
 
     expression [
@@ -3883,7 +3883,7 @@ PPCompositeParser subclass: PPLambdaParser [
     variable [
 	<category: 'productions'>
 	^(#letter asParser , #word asParser star) token trim 
-	    ==> [:token | token value]
+	    => [:token | token value]
     ]
 ]
 

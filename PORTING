@@ -9,6 +9,7 @@ of how it was converted.
 4.) Symbol>>value added for compability
 5.) reversed -> reverse
 6.) 0.7 as subtraction result
+7.) Change ==> to => and >=> to ><
 
 
 Testing the port...

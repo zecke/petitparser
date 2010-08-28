@@ -333,14 +333,14 @@ Instance Variables:
 	^PPChoiceParser with: self with: aParser
     ]
 
-    ==> aBlock [
+    => aBlock [
 	"Answer a new parser that performs aBlock as action handler on success."
 
 	<category: 'operations-mapping'>
 	^PPActionParser on: self block: aBlock
     ]
 
-    >=> aBlock [
+    >< aBlock [
 	"Answer a new parser that wraps the receiving parser with a two argument block. The first argument is the parsed stream, the second argument a continuation block on the delegate parser."
 
 	<category: 'operations-mapping'>
@@ -358,7 +358,7 @@ Instance Variables:
 	"Answer a new parser that always returns anObject from a successful parse."
 
 	<category: 'operations-mapping'>
-	^self ==> [:nodes | anObject]
+	^self => [:nodes | anObject]
     ]
 
     asParser [
@@ -384,7 +384,7 @@ Instance Variables:
 	"Answer a new parser that parses the receiver one or more times, separated and possibly ended by aParser."
 
 	<category: 'operations-convenience'>
-	^((self separatedBy: aParser) , aParser optional) ==> 
+	^((self separatedBy: aParser) , aParser optional) => 
 		[:node | 
 		node second isNil 
 		    ifTrue: [node first]
@@ -412,7 +412,7 @@ Instance Variables:
 	| size args |
 	size := aBlock numArgs.
 	args := Array new: size.
-	^self ==> 
+	^self => 
 		[:nodes | 
 		args at: 1 put: (nodes at: 1).
 		2 to: nodes size
@@ -435,7 +435,7 @@ Instance Variables:
 	| size args |
 	size := aBlock numArgs.
 	args := Array new: size.
-	^self ==> 
+	^self => 
 		[:nodes | 
 		args at: size put: (nodes at: nodes size).
 		nodes size - size + 1 to: 1
@@ -472,7 +472,7 @@ Instance Variables:
 	"Answer a new parser that works on the receiving sequence an passes in each element as a block argument."
 
 	<category: 'operations-mapping'>
-	^self ==> aBlock
+	^self => aBlock
     ]
 
     matches: anObject [
@@ -496,7 +496,7 @@ Instance Variables:
 	"Search anObject repeatedly for the matches of the receiver. Evaluate aBlock for each match with the matched parse-tree as the argument. Make sure to always consume exactly one character with each step, to not miss any match."
 
 	<category: 'parsing'>
-	((self and ==> aBlock , #any asParser) / #any asParser) star 
+	((self and => aBlock , #any asParser) / #any asParser) star 
 	    parse: anObject
     ]
 
@@ -559,7 +559,7 @@ Instance Variables:
 	"Answer a new parser consumes any input token but the receiver."
 
 	<category: 'operations'>
-	^(self not , #any asParser) ==> #second
+	^(self not , #any asParser) => #second
     ]
 
     not [
@@ -700,7 +700,7 @@ Instance Variables:
 
 	<category: 'operations-convenience'>
 	^(PPSequenceParser with: self
-	    with: (PPSequenceParser with: aParser with: self) star) ==> 
+	    with: (PPSequenceParser with: aParser with: self) star) => 
 		    [:nodes | 
 		    | result |
 		    result := Array new: 2 * nodes second size + 1.
@@ -734,8 +734,8 @@ Instance Variables:
 				rest
 				    addFirst: each;
 				    yourself])
-		    with: aParser and ==> [:each | OrderedCollection new]).
-	^parser ==> [:rest | rest asArray]
+		    with: aParser and => [:each | OrderedCollection new]).
+	^parser => [:rest | rest asArray]
     ]
 
     starLazy: aParser [
@@ -745,13 +745,13 @@ Instance Variables:
 	| parser |
 	parser := PPChoiceParser new.
 	parser 
-	    setParsers: (Array with: aParser and ==> [:each | OrderedCollection new]
+	    setParsers: (Array with: aParser and => [:each | OrderedCollection new]
 		    with: (self , parser map: 
 				[:each :rest | 
 				rest
 				    addFirst: each;
 				    yourself])).
-	^parser ==> [:rest | rest asArray]
+	^parser => [:rest | rest asArray]
     ]
 
     token [
@@ -800,7 +800,7 @@ Instance Variables:
 	"Answer a new parser that either parses the receiver or aParser. Fail if both pass or fail (exclusive choice, unordered choice)."
 
 	<category: 'operations'>
-	^(self not , aParser) / (aParser not , self) ==> #second
+	^(self not , aParser) / (aParser not , self) => #second
     ]
 ]
 
@@ -1059,9 +1059,9 @@ The following code initializes a parser for arithmetic expressions. First we ins
 
 	expression := PPExpressionParser new.
 	parens := $( asParser token trim , expression , $) asParser token trim 
-		==> [ :nodes | nodes second ].
+		=> [ :nodes | nodes second ].
 	integer := #digit asParser plus token trim
-		==> [ :token | token value asInteger ].
+		=> [ :token | token value asInteger ].
 	
 Then we define on what term the expression grammar is built on:
 
@@ -1150,13 +1150,13 @@ Instance Variables:
 			    with: (list size = 1 
 				    ifTrue: 
 					[list first first 
-					    ==> [:operator | Array with: list first second with: operator]]
+					    => [:operator | Array with: list first second with: operator]]
 				    ifFalse: 
 					[list inject: PPChoiceParser new
 					    into: 
 						[:choice :each | 
 						choice 
-						    / (each first ==> [:operator | Array with: each second with: operator])]])]]
+						    / (each first => [:operator | Array with: each second with: operator])]])]]
     ]
 
     buildSelectors [
@@ -1651,7 +1651,7 @@ PPListParser subclass: PPSequenceParser [
 
     map: aBlock [
 	<category: 'operations'>
-	^self ==> [:nodes | aBlock valueWithArguments: nodes]
+	^self => [:nodes | aBlock valueWithArguments: nodes]
     ]
 
     parseOn: aStream [
@@ -1681,7 +1681,7 @@ PPListParser subclass: PPSequenceParser [
 		[:index | 
 		(index isInteger and: [index between: 1 and: parsers size]) 
 		    ifFalse: [self error: 'Invalid permutation index: ' , index printString]].
-	^self ==> [:nodes | anArrayOfIntegers collect: [:index | nodes at: index]]
+	^self => [:nodes | anArrayOfIntegers collect: [:index | nodes at: index]]
     ]
 ]
 
