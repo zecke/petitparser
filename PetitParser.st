@@ -193,7 +193,7 @@ SequenceableCollection extend [
 
     asPetitStream [
 	<category: '*petitparser-core-converting'>
-	^PPStream on: self
+	^PP.PPStream on: self
     ]
 
 ]
