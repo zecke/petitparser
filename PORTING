@@ -10,6 +10,9 @@ of how it was converted.
 5.) reversed -> reverse
 6.) 0.7 as subtraction result
 7.) Change ==> to => and >=> to ><
+8.) PositionableStream needs changes. The PetitParser attempts
+    to access variables directly, the names are different from
+    Pharo to here.
 
 
 Testing the port...

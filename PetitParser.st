@@ -97,12 +97,12 @@ PositionableStream extend [
 	"Some of my subclasses do not use the instance-variables collection, position and readLimit but instead have a completely different internal representation. In these cases just use the super implementation that is inefficient but should work in all cases."
 
 	<category: '*petitparser-core-converting'>
-	^(collection isNil or: [position isNil or: [readLimit isNil]]) 
+	^(collection isNil or: [self position isNil or: [self size isNil]]) 
 	    ifFalse: 
 		[PPStream 
 		    on: collection
-		    from: position
-		    to: readLimit]
+		    from: self position + 1
+		    to: self size]
 	    ifTrue: [super asPetitStream]
     ]
 
@@ -130,9 +130,9 @@ ReadStream subclass: PPStream [
 
 	<category: 'accessing'>
 	| answer endPosition |
-	endPosition := position + anInteger min: readLimit.
-	answer := collection copyFrom: position + 1 to: endPosition.
-	position := endPosition.
+	endPosition := self position + anInteger min: self size.
+	answer := collection copyFrom: self position + 1 to: endPosition.
+	self position: endPosition.
 	^answer
     ]
 
@@ -140,15 +140,15 @@ ReadStream subclass: PPStream [
 	"An improved version of peek, that is slightly faster than the built in version."
 
 	<category: 'accessing'>
-	^self atEnd ifFalse: [collection at: position + 1]
+	^self atEnd ifFalse: [collection at: self position + 1]
     ]
 
     printOn: aStream [
 	<category: 'printing'>
 	aStream
-	    nextPutAll: (collection copyFrom: 1 to: position);
+	    nextPutAll: (collection copyFrom: 1 to: self position);
 	    nextPutAll: '·';
-	    nextPutAll: (collection copyFrom: position + 1 to: readLimit)
+	    nextPutAll: (collection copyFrom: self position + 1 to: self size)
     ]
 ]
 
