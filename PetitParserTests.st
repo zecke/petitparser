@@ -1,3 +1,5 @@
+PackageLoader fileInPackage: #SUnit.
+
 TestResource subclass: PPParserResource [
     | parsers |
     
