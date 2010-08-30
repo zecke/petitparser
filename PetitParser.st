@@ -16,12 +16,13 @@ String extend [
     ]
 
     includesSubString: subString [
+	<category: '*petitparser-core-converting-gst'>
 	| res |
 
 	res := self indexOf: subString matchCase: false startingAt: 1.
 	res ifNil: [^false].
 
-	^ res first > 1
+	^ res first >= 1
     ]
 ]
 
