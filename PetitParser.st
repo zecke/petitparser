@@ -211,6 +211,11 @@ Object extend [
 	^false
     ]
 
+    isPetitParser [
+	<category: '*petitparser-core-testing'>
+	^false
+    ]
+
 ]
 
 
@@ -484,6 +489,11 @@ Instance Variables:
     initialize [
 	<category: 'initialization'>
 	
+    ]
+
+    isPetitParser [
+	<category: 'testing'>
+	^true
     ]
 
     isUnresolved [
@@ -886,7 +896,7 @@ Instance Variables:
     parseOn: aStream [
 	<category: 'parsing'>
 	| element |
-	^(element := super parseOn: aStream) isPetitFailure 
+	^(element := parser parseOn: aStream) isPetitFailure 
 	    ifFalse: [block value: element]
 	    ifTrue: [element]
     ]
@@ -926,7 +936,7 @@ PPDelegateParser subclass: PPAndParser [
 	<category: 'parsing'>
 	| element position |
 	position := aStream position.
-	element := super parseOn: aStream.
+	element := parser parseOn: aStream.
 	aStream position: position.
 	^element
     ]
@@ -1000,17 +1010,19 @@ The start production is defined in the method start. It is aliased to the inst-v
 	self initialize.
 
 	"find all the productions that need to be initialized"
-	allVariableNames := self class allInstVarNames.
-	ignoredVariableNames := self class ignoredNames.
+	allVariableNames := self class allInstVarNames 
+		    collect: [:each | each asSymbol].
+	ignoredVariableNames := self class ignoredNames 
+		    collect: [:each | each asSymbol].
 	productionIndexesAndNames := ((1 to: self class instSize) 
-		    collect: [:index | index -> (allVariableNames at: index) asSymbol]) 
-			reject: [:assoc | ignoredVariableNames includes: assoc value asSymbol].
+		    collect: [:index | index -> (allVariableNames at: index)]) 
+			reject: [:assoc | ignoredVariableNames includes: assoc value].
 
 	"initialize productions with an undefined parser to be replaced later"
 	parser := PPUnresolvedParser named: aSymbol.
 	productionIndexesAndNames 
 	    do: [:assoc | self instVarAt: assoc key put: (PPUnresolvedParser named: assoc value)].
-	parser := self perform: aSymbol.
+	parser def: (self perform: aSymbol).
 
 	"resolve unresolved parsers with their actual implementation"
 	productionIndexesAndNames do: 
@@ -1062,7 +1074,7 @@ PPDelegateParser subclass: PPEndOfInputParser [
 	<category: 'parsing'>
 	| position result |
 	position := aStream position.
-	result := super parseOn: aStream.
+	result := parser parseOn: aStream.
 	(result isPetitFailure or: [aStream atEnd]) ifTrue: [^result].
 	result := PPFailure message: 'end of input expected' at: aStream position.
 	aStream position: position.
@@ -1277,7 +1289,7 @@ PPDelegateParser subclass: PPFlattenParser [
 	<category: 'parsing'>
 	| start element stop |
 	start := aStream position.
-	element := super parseOn: aStream.
+	element := parser parseOn: aStream.
 	element isPetitFailure 
 	    ifTrue: 
 		[aStream position: start.
@@ -1362,7 +1374,7 @@ Instance Variables:
 			    ifTrue: [PPFailure message: 'overflow' at: stream position]
 			    ifFalse: 
 				[memento increment.
-				super parseOn: stream]).
+				parser parseOn: stream]).
 		memento position: stream position]
 	    ifFalse: [stream position: memento position].
 	^memento result
@@ -1391,7 +1403,7 @@ PPDelegateParser subclass: PPNotParser [
 	<category: 'parsing'>
 	| element position |
 	position := aStream position.
-	element := super parseOn: aStream.
+	element := parser parseOn: aStream.
 	aStream position: position.
 	^element isPetitFailure 
 	    ifFalse: [PPFailure message: '' at: aStream position]
@@ -1450,13 +1462,13 @@ Instance Variables:
 	start := aStream position.
 	elements := OrderedCollection new.
 	[elements size < min] whileTrue: 
-		[(element := super parseOn: aStream) isPetitFailure 
+		[(element := parser parseOn: aStream) isPetitFailure 
 		    ifTrue: 
 			[aStream position: start.
 			^element].
 		elements addLast: element].
 	[elements size < max] whileTrue: 
-		[(element := super parseOn: aStream) isPetitFailure 
+		[(element := parser parseOn: aStream) isPetitFailure 
 		    ifTrue: [^elements asArray].
 		elements addLast: element].
 	^elements asArray
@@ -1503,7 +1515,7 @@ PPDelegateParser subclass: PPTrimmingParser [
 	| position element |
 	position := aStream position.
 	[(trimmer parseOn: aStream) isPetitFailure] whileFalse.
-	element := super parseOn: aStream.
+	element := parser parseOn: aStream.
 	element isPetitFailure 
 	    ifTrue: 
 		[aStream position: position.
@@ -1778,6 +1790,7 @@ PPLiteralParser subclass: PPLiteralObjectParser [
 	"Answer a parser that can parse the receiver case-insensitive."
 
 	<category: 'operators'>
+	literal asUppercase = literal asLowercase ifTrue: [^self].
 	^PPPredicateObjectParser on: [:value | literal sameAs: value]
 	    message: message
     ]
@@ -1802,6 +1815,7 @@ PPLiteralParser subclass: PPLiteralSequenceParser [
 	"Answer a parser that can parse the receiver case-insensitive."
 
 	<category: 'operators'>
+	literal asUppercase = literal asLowercase ifTrue: [^self].
 	^PPPredicateSequenceParser 
 	    on: [:value | literal sameAs: value]
 	    message: message

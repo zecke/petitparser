@@ -40,6 +40,7 @@ TestCase subclass: PPAbstractParseTest [
     assert: aParser fail: aCollection [
 	<category: 'utilities'>
 	| stream result |
+	self assert: aParser isPetitParser.
 	stream := aCollection asPetitStream.
 	result := aParser parse: stream.
 	self assert: result isPetitFailure.
@@ -76,6 +77,7 @@ TestCase subclass: PPAbstractParseTest [
     assert: aParser parse: aParseObject to: aTargetObject end: anInteger [
 	<category: 'utilities'>
 	| stream result |
+	self assert: aParser isPetitParser.
 	stream := aParseObject asPetitStream.
 	result := aParser parse: stream.
 	aTargetObject isNil 
@@ -830,6 +832,397 @@ PPAbstractParseTest subclass: PPComposedTest [
 	    to: #(#return '1234').
 	self assert: return fail: '1'.
 	self assert: return fail: '^'
+    ]
+]
+
+
+
+PPAbstractParseTest subclass: PPCompositeParserTest [
+    | parser |
+    
+    <comment: nil>
+    <category: 'PetitTests-Core'>
+
+    PPCompositeParserTest class >> isAbstract [
+	<category: 'testing'>
+	^self name = #PPCompositeParserTest
+    ]
+
+    PPCompositeParserTest class >> resources [
+	<category: 'accessing'>
+	^Array with: PPParserResource
+    ]
+
+    assert: aCollection is: anObject [
+	<category: 'utilities'>
+	| result |
+	result := self parse: aCollection.
+	self 
+	    assert: result = anObject
+	    description: 'Got: ' , result printString , '; Expected: ' 
+		    , anObject printString
+	    resumable: true
+    ]
+
+    parse: aString [
+	<category: 'utilities'>
+	^parser parse: aString onError: [:err :pos | self error: err]
+    ]
+
+    parse: aString production: aSymbol [
+	<category: 'utilities'>
+	^(parser productionAt: aSymbol) parse: aString
+	    onError: [:err :pos | self error: err]
+    ]
+
+    parserClass [
+	<category: 'accessing'>
+	self subclassResponsibility
+    ]
+
+    parserInstance [
+	<category: 'accessing'>
+	^PPParserResource current parserAt: self parserClass
+    ]
+
+    setUp [
+	<category: 'running'>
+	super setUp.
+	parser := self parserInstance
+    ]
+]
+
+
+
+PPCompositeParserTest subclass: PPArithmeticParserTest [
+    
+    <comment: nil>
+    <category: 'PetitTests-Tests'>
+
+    parserClass [
+	<category: 'accessing'>
+	^PPArithmeticParser
+    ]
+
+    testAdd [
+	<category: 'testing-operations'>
+	self assert: '1 + 2' is: 3.
+	self assert: '2 + 1' is: 3.
+	self assert: '1 + 2.3' is: 3.3.
+	self assert: '2.3 + 1' is: 3.3.
+	self assert: '1 + -2' is: -1.
+	self assert: '-2 + 1' is: -1
+    ]
+
+    testAddMany [
+	<category: 'testing-operations'>
+	self assert: '1' is: 1.
+	self assert: '1 + 2' is: 3.
+	self assert: '1 + 2 + 3' is: 6.
+	self assert: '1 + 2 + 3 + 4' is: 10.
+	self assert: '1 + 2 + 3 + 4 + 5' is: 15
+    ]
+
+    testBrackets [
+	<category: 'testing-expression'>
+	self assert: '(1)' is: 1.
+	self assert: '(1 + 2)' is: 3.
+	self assert: '((1))' is: 1.
+	self assert: '((1 + 2))' is: 3.
+	self assert: '2 * (3 + 4)' is: 14.
+	self assert: '(2 + 3) * 4' is: 20.
+	self assert: '6 / (2 + 4)' is: 1.
+	self assert: '(2 + 6) / 2' is: 4
+    ]
+
+    testDiv [
+	<category: 'testing-operations'>
+	self assert: '12 / 3' is: 4.
+	self assert: '-16 / -4' is: 4
+    ]
+
+    testDivMany [
+	<category: 'testing-operations'>
+	self assert: '100 / 2' is: 50.
+	self assert: '100 / 2 / 2' is: 25.
+	self assert: '100 / 2 / 2 / 5' is: 5.
+	self assert: '100 / 2 / 2 / 5 / 5' is: 1
+    ]
+
+    testMul [
+	<category: 'testing-operations'>
+	self assert: '2 * 3' is: 6.
+	self assert: '2 * -4' is: -8
+    ]
+
+    testMulMany [
+	<category: 'testing-operations'>
+	self assert: '1 * 2' is: 2.
+	self assert: '1 * 2 * 3' is: 6.
+	self assert: '1 * 2 * 3 * 4' is: 24.
+	self assert: '1 * 2 * 3 * 4 * 5' is: 120
+    ]
+
+    testNum [
+	<category: 'testing'>
+	self assert: '0' is: 0.
+	self assert: '0.0' is: 0.0.
+	self assert: '1' is: 1.
+	self assert: '1.2' is: 1.2.
+	self assert: '34' is: 34.
+	self assert: '56.78' is: 56.78.
+	self assert: '-9' is: -9.
+	self assert: '-9.9' is: -9.9
+    ]
+
+    testPow [
+	<category: 'testing-operations'>
+	self assert: '2 ^ 3' is: 8.
+	self assert: '-2 ^ 3' is: -8.
+	self assert: '-2 ^ -3' is: -0.125
+    ]
+
+    testPowMany [
+	<category: 'testing-operations'>
+	self assert: '4 ^ 3' is: 64.
+	self assert: '4 ^ 3 ^ 2' is: 262144.
+	self assert: '4 ^ 3 ^ 2 ^ 1' is: 262144.
+	self assert: '4 ^ 3 ^ 2 ^ 1 ^ 0' is: 262144
+    ]
+
+    testPriority [
+	<category: 'testing-expression'>
+	self assert: '2 * 3 + 4' is: 10.
+	self assert: '2 + 3 * 4' is: 14.
+	self assert: '6 / 3 + 4' is: 6.
+	self assert: '2 + 6 / 2' is: 5
+    ]
+
+    testSub [
+	<category: 'testing-operations'>
+	self assert: '1 - 2' is: -1.
+	self assert: '1.2 - 1.2' is: 0.
+	self assert: '1 - -2' is: 3.
+	self assert: '-1 - -2' is: 1
+    ]
+
+    testSubMany [
+	<category: 'testing-operations'>
+	self assert: '1' is: 1.
+	self assert: '1 - 2' is: -1.
+	self assert: '1 - 2 - 3' is: -4.
+	self assert: '1 - 2 - 3 - 4' is: -8.
+	self assert: '1 - 2 - 3 - 4 - 5' is: -13
+    ]
+]
+
+
+
+PPArithmeticParserTest subclass: PPExpressionParserTest [
+    
+    <comment: nil>
+    <category: 'PetitTests-Tests'>
+
+    PPExpressionParserTest class >> shouldInheritSelectors [
+	<category: 'testing'>
+	^true
+    ]
+
+    parserInstance [
+	<category: 'accessing'>
+	| expression parens number |
+	expression := PPExpressionParser new.
+	parens := ($( asParser token trim , expression , $) asParser token trim) 
+		    => [:nodes | nodes second].
+	number := (#digit asParser plus 
+		    , ($. asParser , #digit asParser plus) optional) token 
+		    trim => [:token | token value asNumber].
+	expression term: parens / number.
+	expression
+	    group: [:g | g prefix: $- asParser token trim do: [:op :a | a negated]];
+	    group: 
+		    [:g | 
+		    g postfix: '++' asParser token trim do: [:a :op | a + 1].
+		    g postfix: '--' asParser token trim do: [:a :op | a - 1]];
+	    group: [:g | g right: $^ asParser token trim do: [:a :op :b | a raisedTo: b]];
+	    group: 
+		    [:g | 
+		    g left: $* asParser token trim do: [:a :op :b | a * b].
+		    g left: $/ asParser token trim do: [:a :op :b | a / b]];
+	    group: 
+		    [:g | 
+		    g left: $+ asParser token trim do: [:a :op :b | a + b].
+		    g left: $- asParser token trim do: [:a :op :b | a - b]].
+	^expression end
+    ]
+
+    testPostfixAdd [
+	<category: 'testing'>
+	self assert: '0++' is: 1.
+	self assert: '0++++' is: 2.
+	self assert: '0++++++' is: 3.
+	self assert: '0+++1' is: 2.
+	self assert: '0+++++1' is: 3.
+	self assert: '0+++++++1' is: 4
+    ]
+
+    testPostfixSub [
+	<category: 'testing'>
+	self assert: '1--' is: 0.
+	self assert: '2----' is: 0.
+	self assert: '3------' is: 0.
+	self assert: '2---1' is: 0.
+	self assert: '3-----1' is: 0.
+	self assert: '4-------1' is: 0
+    ]
+
+    testPrefixNegate [
+	<category: 'testing'>
+	self assert: '1' is: 1.
+	self assert: '-1' is: -1.
+	self assert: '--1' is: 1.
+	self assert: '---1' is: -1
+    ]
+]
+
+
+
+PPCompositeParserTest subclass: PPLambdaParserTest [
+    
+    <comment: nil>
+    <category: 'PetitTests-Tests'>
+
+    parserClass [
+	<category: 'accessing'>
+	^PPLambdaParser
+    ]
+
+    testAbstraction [
+	<category: 'testing'>
+	self assert: '\x.y' is: #('x' 'y').
+	self assert: '\x.\y.z' is: #('x' #('y' 'z'))
+    ]
+
+    testAnd [
+	<category: 'testing-curch'>
+	self assert: self parserClass and = #('p' #('q' #(#('p' 'q') 'p')))
+    ]
+
+    testApplication [
+	<category: 'testing'>
+	self assert: '(x x)' is: #('x' 'x').
+	self assert: '(x y)' is: #('x' 'y').
+	self assert: '((x y) z)' is: #(#('x' 'y') 'z').
+	self assert: '(x (y z))' is: #('x' #('y' 'z'))
+    ]
+
+    testFalse [
+	<category: 'testing-curch'>
+	self assert: self parserClass false = #('x' #('y' 'y'))
+    ]
+
+    testIfThenElse [
+	<category: 'testing-curch'>
+	self assert: self parserClass ifthenelse = #('p' 'p')
+    ]
+
+    testNot [
+	<category: 'testing-curch'>
+	self assert: self parserClass not = #('p' #('a' #('b' #(#('p' 'b') 'a'))))
+    ]
+
+    testOr [
+	<category: 'testing-curch'>
+	self assert: self parserClass or = #('p' #('q' #(#('p' 'p') 'q')))
+    ]
+
+    testParseOnError [
+	<category: 'testing-utilities'>
+	| result beenHere |
+	result := self parserClass parse: '\x.y' onError: [self fail].
+	self assert: result = #('x' 'y').
+	beenHere := false.
+	result := self parserClass parse: '\x.' onError: [beenHere := true].
+	self assert: beenHere.
+	beenHere := false.
+	result := self parserClass parse: '\x.'
+		    onError: 
+			[:fail | 
+			beenHere := true.
+			fail].
+	self assert: beenHere.
+	self assert: (result message includesSubString: '$(').
+	self assert: (result message includesSubString: 'expected').
+	self assert: result position = 0.
+	beenHere := false.
+	result := self parserClass parse: '\x.'
+		    onError: 
+			[:msg :pos | 
+			self assert: (msg includesSubString: '$(').
+			self assert: (msg includesSubString: 'expected').
+			self assert: pos = 0.
+			beenHere := true].
+	self assert: result.
+	self assert: beenHere
+    ]
+
+    testParseStartingAtOnError [
+	<category: 'testing-utilities'>
+	| result beenHere |
+	result := self parserClass 
+		    parse: 'x'
+		    startingAt: #variable
+		    onError: [self fail].
+	self assert: result = 'x'.
+	beenHere := false.
+	result := self parserClass 
+		    parse: '\'
+		    startingAt: #variable
+		    onError: [beenHere := true].
+	self assert: beenHere.
+	beenHere := false.
+	result := self parserClass 
+		    parse: '\'
+		    startingAt: #variable
+		    onError: 
+			[:fail | 
+			beenHere := true.
+			fail].
+	self assert: beenHere.
+	self assert: result message = 'letter expected'.
+	self assert: result position = 0.
+	beenHere := false.
+	result := self parserClass 
+		    parse: '\'
+		    startingAt: #variable
+		    onError: 
+			[:msg :pos | 
+			self assert: msg = 'letter expected'.
+			self assert: pos = 0.
+			beenHere := true].
+	self assert: beenHere
+    ]
+
+    testProductionAt [
+	<category: 'testing-utilities'>
+	self assert: (parser productionAt: #foo) isNil.
+	self assert: (parser productionAt: #foo ifAbsent: [true]).
+	self assert: (parser productionAt: #start) notNil.
+	self assert: (parser productionAt: #start ifAbsent: [true]) notNil.
+	self assert: (parser productionAt: #variable) notNil.
+	self assert: (parser productionAt: #variable ifAbsent: [true]) notNil
+    ]
+
+    testTrue [
+	<category: 'testing-curch'>
+	self assert: self parserClass true = #('x' #('y' 'x'))
+    ]
+
+    testVariable [
+	<category: 'testing'>
+	self assert: 'x' is: 'x'.
+	self assert: 'xy' is: 'xy'.
+	self assert: 'x12' is: 'x12'
     ]
 ]
 
@@ -1766,12 +2159,14 @@ PPAbstractParseTest subclass: PPParserTest [
 	parser := $a asParser.
 	self assert: (parser parse: 'a') = $a.
 	self assert: (result := parser parse: 'b') isPetitFailure.
+	self assert: (result message includesSubString: '$a').
+	self assert: (result message includesSubString: 'expected').
 	self assert: result position = 0.
-	self assert: result message = '$a expected'.
 	self assert: (parser parse: 'a' readStream) = $a.
 	self assert: (result := parser parse: 'b' readStream) isPetitFailure.
-	self assert: result position = 0.
-	self assert: result message = '$a expected'
+	self assert: (result message includesSubString: '$a').
+	self assert: (result message includesSubString: 'expected').
+	self assert: result position = 0
     ]
 
     testParseOnError0 [
@@ -1797,7 +2192,8 @@ PPAbstractParseTest subclass: PPParserTest [
 		    onError: 
 			[:failure | 
 			self assert: failure position = 0.
-			self assert: failure message = '$a expected'.
+			self assert: (failure message includesSubString: '$a').
+			self assert: (failure message includesSubString: 'expected').
 			seen := true].
 	self assert: result.
 	self assert: seen
@@ -1813,11 +2209,21 @@ PPAbstractParseTest subclass: PPParserTest [
 	result := parser parse: 'b'
 		    onError: 
 			[:msg :pos | 
-			self assert: msg = '$a expected'.
+			self assert: (msg includesSubString: '$a').
+			self assert: (msg includesSubString: 'expected').
 			self assert: pos = 0.
 			seen := true].
 	self assert: result.
 	self assert: seen
+    ]
+
+    testParser [
+	<category: 'testing-utilities'>
+	| parser |
+	parser := PPParser new.
+	self assert: parser isPetitParser.
+	self deny: 4 isPetitParser.
+	self deny: 'foo' isPetitParser
     ]
 
     testPermutation [
@@ -2024,9 +2430,9 @@ PPAbstractParseTest subclass: PPParserTest [
 	<category: 'testing-accessing'>
 	| parser |
 	parser := PPParser new.
-	self assert: (parser printString beginsWith: 'a PPParser').
+	self assert: (parser printString includesSubString: 'PPParser').
 	parser := PPParser named: 'choice'.
-	self assert: (parser printString beginsWith: 'a PPParser(choice').
+	self assert: (parser printString includesSubString: 'PPParser(choice').
 	parser := PPLiteralObjectParser on: $a.
 	self assert: (parser printString includesSubString: '$a').
 	parser := PPFailingParser message: 'error'.
@@ -3350,7 +3756,7 @@ PPAbstractParseTest subclass: PPTokenTest [
 	<category: 'testing'>
 	| result |
 	result := PPToken on: 'var'.
-	self assert: result printString = 'a PPToken(var)'
+	self assert: (result printString includesSubString: 'PPToken(var)')
     ]
 
     testSize [
@@ -3381,384 +3787,6 @@ PPAbstractParseTest subclass: PPTokenTest [
 	result := self parse: input using: self identifier.
 	self assert: result value = input.
 	self deny: result value == input
-    ]
-]
-
-
-
-TestCase subclass: PPCompositeParserTest [
-    | parser |
-    
-    <comment: nil>
-    <category: 'PetitTests-Core'>
-
-    PPCompositeParserTest class >> isAbstract [
-	<category: 'testing'>
-	^self name = #PPCompositeParserTest
-    ]
-
-    PPCompositeParserTest class >> resources [
-	<category: 'accessing'>
-	^Array with: PPParserResource
-    ]
-
-    assert: aCollection is: anObject [
-	<category: 'utilities'>
-	| result |
-	result := parser parse: aCollection onError: [:err :pos | self error: err].
-	self 
-	    assert: result = anObject
-	    description: 'Got: ' , result printString , '; Expected: ' 
-		    , anObject printString
-	    resumable: true
-    ]
-
-    parserClass [
-	<category: 'accessing'>
-	self subclassResponsibility
-    ]
-
-    parserInstance [
-	<category: 'accessing'>
-	^PPParserResource current parserAt: self parserClass
-    ]
-
-    setUp [
-	<category: 'running'>
-	super setUp.
-	parser := self parserInstance
-    ]
-]
-
-
-
-PPCompositeParserTest subclass: PPArithmeticParserTest [
-    
-    <comment: nil>
-    <category: 'PetitTests-Tests'>
-
-    parserClass [
-	<category: 'accessing'>
-	^PPArithmeticParser
-    ]
-
-    testAdd [
-	<category: 'testing-operations'>
-	self assert: '1 + 2' is: 3.
-	self assert: '2 + 1' is: 3.
-	self assert: '1 + 2.3' is: 3.3.
-	self assert: '2.3 + 1' is: 3.3.
-	self assert: '1 + -2' is: -1.
-	self assert: '-2 + 1' is: -1
-    ]
-
-    testAddMany [
-	<category: 'testing-operations'>
-	self assert: '1' is: 1.
-	self assert: '1 + 2' is: 3.
-	self assert: '1 + 2 + 3' is: 6.
-	self assert: '1 + 2 + 3 + 4' is: 10.
-	self assert: '1 + 2 + 3 + 4 + 5' is: 15
-    ]
-
-    testBrackets [
-	<category: 'testing-expression'>
-	self assert: '(1)' is: 1.
-	self assert: '(1 + 2)' is: 3.
-	self assert: '((1))' is: 1.
-	self assert: '((1 + 2))' is: 3.
-	self assert: '2 * (3 + 4)' is: 14.
-	self assert: '(2 + 3) * 4' is: 20.
-	self assert: '6 / (2 + 4)' is: 1.
-	self assert: '(2 + 6) / 2' is: 4
-    ]
-
-    testDiv [
-	<category: 'testing-operations'>
-	self assert: '12 / 3' is: 4.
-	self assert: '-16 / -4' is: 4
-    ]
-
-    testDivMany [
-	<category: 'testing-operations'>
-	self assert: '100 / 2' is: 50.
-	self assert: '100 / 2 / 2' is: 25.
-	self assert: '100 / 2 / 2 / 5' is: 5.
-	self assert: '100 / 2 / 2 / 5 / 5' is: 1
-    ]
-
-    testMul [
-	<category: 'testing-operations'>
-	self assert: '2 * 3' is: 6.
-	self assert: '2 * -4' is: -8
-    ]
-
-    testMulMany [
-	<category: 'testing-operations'>
-	self assert: '1 * 2' is: 2.
-	self assert: '1 * 2 * 3' is: 6.
-	self assert: '1 * 2 * 3 * 4' is: 24.
-	self assert: '1 * 2 * 3 * 4 * 5' is: 120
-    ]
-
-    testNum [
-	<category: 'testing'>
-	self assert: '0' is: 0.
-	self assert: '0.0' is: 0.0.
-	self assert: '1' is: 1.
-	self assert: '1.2' is: 1.2.
-	self assert: '34' is: 34.
-	self assert: '56.78' is: 56.78.
-	self assert: '-9' is: -9.
-	self assert: '-9.9' is: -9.9
-    ]
-
-    testPow [
-	<category: 'testing-operations'>
-	self assert: '2 ^ 3' is: 8.
-	self assert: '-2 ^ 3' is: -8.
-	self assert: '-2 ^ -3' is: -0.125
-    ]
-
-    testPowMany [
-	<category: 'testing-operations'>
-	self assert: '4 ^ 3' is: 64.
-	self assert: '4 ^ 3 ^ 2' is: 262144.
-	self assert: '4 ^ 3 ^ 2 ^ 1' is: 262144.
-	self assert: '4 ^ 3 ^ 2 ^ 1 ^ 0' is: 262144
-    ]
-
-    testPriority [
-	<category: 'testing-expression'>
-	self assert: '2 * 3 + 4' is: 10.
-	self assert: '2 + 3 * 4' is: 14.
-	self assert: '6 / 3 + 4' is: 6.
-	self assert: '2 + 6 / 2' is: 5
-    ]
-
-    testSub [
-	<category: 'testing-operations'>
-	self assert: '1 - 2' is: -1.
-	self assert: '1.3 - 2' is: -0.7.
-	self assert: '1 - -2' is: 3.
-	self assert: '-1 - -2' is: 1
-    ]
-
-    testSubMany [
-	<category: 'testing-operations'>
-	self assert: '1' is: 1.
-	self assert: '1 - 2' is: -1.
-	self assert: '1 - 2 - 3' is: -4.
-	self assert: '1 - 2 - 3 - 4' is: -8.
-	self assert: '1 - 2 - 3 - 4 - 5' is: -13
-    ]
-]
-
-
-
-PPArithmeticParserTest subclass: PPExpressionParserTest [
-    
-    <comment: nil>
-    <category: 'PetitTests-Tests'>
-
-    PPExpressionParserTest class >> shouldInheritSelectors [
-	<category: 'testing'>
-	^true
-    ]
-
-    parserInstance [
-	<category: 'accessing'>
-	| expression parens number |
-	expression := PPExpressionParser new.
-	parens := ($( asParser token trim , expression , $) asParser token trim) 
-		    => [:nodes | nodes second].
-	number := (#digit asParser plus 
-		    , ($. asParser , #digit asParser plus) optional) token 
-		    trim => [:token | token value asNumber].
-	expression term: parens / number.
-	expression
-	    group: [:g | g prefix: $- asParser token trim do: [:op :a | a negated]];
-	    group: 
-		    [:g | 
-		    g postfix: '++' asParser token trim do: [:a :op | a + 1].
-		    g postfix: '--' asParser token trim do: [:a :op | a - 1]];
-	    group: [:g | g right: $^ asParser token trim do: [:a :op :b | a raisedTo: b]];
-	    group: 
-		    [:g | 
-		    g left: $* asParser token trim do: [:a :op :b | a * b].
-		    g left: $/ asParser token trim do: [:a :op :b | a / b]];
-	    group: 
-		    [:g | 
-		    g left: $+ asParser token trim do: [:a :op :b | a + b].
-		    g left: $- asParser token trim do: [:a :op :b | a - b]].
-	^expression end
-    ]
-
-    testPostfixAdd [
-	<category: 'testing'>
-	self assert: '0++' is: 1.
-	self assert: '0++++' is: 2.
-	self assert: '0++++++' is: 3.
-	self assert: '0+++1' is: 2.
-	self assert: '0+++++1' is: 3.
-	self assert: '0+++++++1' is: 4
-    ]
-
-    testPostfixSub [
-	<category: 'testing'>
-	self assert: '1--' is: 0.
-	self assert: '2----' is: 0.
-	self assert: '3------' is: 0.
-	self assert: '2---1' is: 0.
-	self assert: '3-----1' is: 0.
-	self assert: '4-------1' is: 0
-    ]
-
-    testPrefixNegate [
-	<category: 'testing'>
-	self assert: '1' is: 1.
-	self assert: '-1' is: -1.
-	self assert: '--1' is: 1.
-	self assert: '---1' is: -1
-    ]
-]
-
-
-
-PPCompositeParserTest subclass: PPLambdaParserTest [
-    
-    <comment: nil>
-    <category: 'PetitTests-Tests'>
-
-    parserClass [
-	<category: 'accessing'>
-	^PPLambdaParser
-    ]
-
-    testAbstraction [
-	<category: 'testing'>
-	self assert: '\x.y' is: #('x' 'y').
-	self assert: '\x.\y.z' is: #('x' #('y' 'z'))
-    ]
-
-    testAnd [
-	<category: 'testing-curch'>
-	self assert: self parserClass and = #('p' #('q' #(#('p' 'q') 'p')))
-    ]
-
-    testApplication [
-	<category: 'testing'>
-	self assert: '(x x)' is: #('x' 'x').
-	self assert: '(x y)' is: #('x' 'y').
-	self assert: '((x y) z)' is: #(#('x' 'y') 'z').
-	self assert: '(x (y z))' is: #('x' #('y' 'z'))
-    ]
-
-    testFalse [
-	<category: 'testing-curch'>
-	self assert: self parserClass false = #('x' #('y' 'y'))
-    ]
-
-    testIfThenElse [
-	<category: 'testing-curch'>
-	self assert: self parserClass ifthenelse = #('p' 'p')
-    ]
-
-    testNot [
-	<category: 'testing-curch'>
-	self assert: self parserClass not = #('p' #('a' #('b' #(#('p' 'b') 'a'))))
-    ]
-
-    testOr [
-	<category: 'testing-curch'>
-	self assert: self parserClass or = #('p' #('q' #(#('p' 'p') 'q')))
-    ]
-
-    testParseOnError [
-	<category: 'testing-utilities'>
-	| result beenHere |
-	result := self parserClass parse: '\x.y' onError: [self fail].
-	self assert: result = #('x' 'y').
-	beenHere := false.
-	result := self parserClass parse: '\x.' onError: [beenHere := true].
-	self assert: beenHere.
-	beenHere := false.
-	result := self parserClass parse: '\x.'
-		    onError: 
-			[:fail | 
-			beenHere := true.
-			fail].
-	self assert: beenHere.
-	self assert: result message = '$( expected'.
-	self assert: result position = 0.
-	beenHere := false.
-	result := self parserClass parse: '\x.'
-		    onError: 
-			[:msg :pos | 
-			self assert: msg = '$( expected'.
-			self assert: pos = 0.
-			beenHere := true].
-	self assert: result.
-	self assert: beenHere
-    ]
-
-    testParseStartingAtOnError [
-	<category: 'testing-utilities'>
-	| result beenHere |
-	result := self parserClass 
-		    parse: 'x'
-		    startingAt: #variable
-		    onError: [self fail].
-	self assert: result = 'x'.
-	beenHere := false.
-	result := self parserClass 
-		    parse: '\'
-		    startingAt: #variable
-		    onError: [beenHere := true].
-	self assert: beenHere.
-	beenHere := false.
-	result := self parserClass 
-		    parse: '\'
-		    startingAt: #variable
-		    onError: 
-			[:fail | 
-			beenHere := true.
-			fail].
-	self assert: beenHere.
-	self assert: result message = 'letter expected'.
-	self assert: result position = 0.
-	beenHere := false.
-	result := self parserClass 
-		    parse: '\'
-		    startingAt: #variable
-		    onError: 
-			[:msg :pos | 
-			self assert: msg = 'letter expected'.
-			self assert: pos = 0.
-			beenHere := true].
-	self assert: beenHere
-    ]
-
-    testProductionAt [
-	<category: 'testing-utilities'>
-	self assert: (parser productionAt: #foo) isNil.
-	self assert: (parser productionAt: #foo ifAbsent: [true]).
-	self assert: (parser productionAt: #start) notNil.
-	self assert: (parser productionAt: #start ifAbsent: [true]) notNil.
-	self assert: (parser productionAt: #variable) notNil.
-	self assert: (parser productionAt: #variable ifAbsent: [true]) notNil
-    ]
-
-    testTrue [
-	<category: 'testing-curch'>
-	self assert: self parserClass true = #('x' #('y' 'x'))
-    ]
-
-    testVariable [
-	<category: 'testing'>
-	self assert: 'x' is: 'x'.
-	self assert: 'xy' is: 'xy'.
-	self assert: 'x12' is: 'x12'
     ]
 ]
 
