@@ -2744,7 +2744,7 @@ PPAbstractParseTest subclass: PPPredicateTest [
 
     charactersDo: aBlock [
 	<category: 'private'>
-	1 to: 256 do: [:index | aBlock value: (Character codePoint: index)]
+	1 to: 127 do: [:index | aBlock value: (Character codePoint: index)]
     ]
 
     parsedCharacterSet: aParser [
