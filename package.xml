@@ -2,6 +2,7 @@
   <name>PetitParser</name>
   <namespace>PP</namespace>
 
+  <url>git://gitorious.org/gnu-smalltalk-ports/petitparser.git</url>
   <filein>PetitParser.st</filein>
 
   <test>
