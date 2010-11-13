@@ -3,6 +3,7 @@
   <namespace>PP</namespace>
 
   <url>git://gitorious.org/gnu-smalltalk-ports/petitparser.git</url>
+  <filein>Extension.st</filein>
   <filein>PetitParser.st</filein>
 
   <test>
@@ -20,6 +21,7 @@
     <filein>PetitParserTests.st</filein>
   </test>
 
+  <file>Extension.st</file>
   <file>PetitParser.st</file>
   <file>PetitParserTests.st</file>
 </package>
