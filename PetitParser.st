@@ -62,30 +62,6 @@ UndefinedObject extend [
 
 
 
-PositionableStream extend [
-
-    asPetitStream [
-	"Some of my subclasses do not use the instance-variables collection, position and readLimit but instead have a completely different internal representation. In these cases just use the super implementation that is inefficient but should work in all cases."
-
-	<category: '*petitparser-core-converting'>
-	^(collection isNil or: [self position isNil or: [self size isNil]]) 
-	    ifFalse: 
-		[PPStream 
-		    on: collection
-		    from: self position + 1
-		    to: self size]
-	    ifTrue: [super asPetitStream]
-    ]
-
-    collection [
-	<category: '*petitparser-core-accessing'>
-	^collection
-    ]
-
-]
-
-
-
 ReadStream subclass: PPStream [
     
     <category: 'PetitParser-Core'>
@@ -121,6 +97,30 @@ ReadStream subclass: PPStream [
 	    nextPutAll: '·';
 	    nextPutAll: (collection copyFrom: self position + 1 to: self size)
     ]
+]
+
+
+
+PositionableStream extend [
+
+    asPetitStream [
+	"Some of my subclasses do not use the instance-variables collection, position and readLimit but instead have a completely different internal representation. In these cases just use the super implementation that is inefficient but should work in all cases."
+
+	<category: '*petitparser-core-converting'>
+	^(collection isNil or: [self position isNil or: [self size isNil]]) 
+	    ifFalse: 
+		[PP.PPStream 
+		    on: collection
+		    from: self position + 1
+		    to: self size]
+	    ifTrue: [super asPetitStream]
+    ]
+
+    collection [
+	<category: '*petitparser-core-accessing'>
+	^collection
+    ]
+
 ]
 
 
