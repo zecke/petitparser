@@ -90,12 +90,28 @@ ReadStream subclass: PPStream [
 	^self atEnd ifFalse: [collection at: self position + 1]
     ]
 
+    position: anInteger [
+	"The receiver does not check for invalid arguments passed to this method, as it is solely used with valid indexes for backtracking."
+
+	<category: 'accessing'>
+	ptr := anInteger + 1
+    ]
+
+
     printOn: aStream [
 	<category: 'printing'>
+	collection isString ifFalse: [^super printOn: aStream].
 	aStream
 	    nextPutAll: (collection copyFrom: 1 to: self position);
 	    nextPutAll: '·';
 	    nextPutAll: (collection copyFrom: self position + 1 to: self size)
+    ]
+
+    uncheckedPeek [
+	"An unchecked version of peek that throws an error if we try to peek over the end of the stream, even faster than #peek."
+
+	<category: 'accessing'>
+	^collection at: ptr
     ]
 ]
 
@@ -191,16 +207,42 @@ Object extend [
 
 
 
+Object subclass: PPCharSetPredicate [
+    | block classification |
+    
+    <category: 'PetitParser-Tools'>
+    <comment: nil>
+
+    PPCharSetPredicate class >> on: aBlock [
+	<category: 'instance creation'>
+	^self basicNew initializeOn: aBlock
+    ]
+
+    initializeOn: aBlock [
+	<category: 'initialization'>
+	block := aBlock.
+	classification := Array new: 255.
+	1 to: classification size
+	    do: [:index | classification at: index put: (block value: (Character value: index))]
+    ]
+
+    value: aCharacter [
+	<category: 'evaluating'>
+	| index |
+	index := aCharacter asInteger.
+	index == 0 ifTrue: [^block value: aCharacter].
+	index > 255 ifTrue: [^block value: aCharacter].
+	^classification at: index
+    ]
+]
+
+
+
 Object subclass: PPFailure [
     | message position |
     
     <category: 'PetitParser-Core'>
-    <comment: 'The failure object in PetitParser. It is the only class that responds to #isPetitFailure with true. It contains an error message and a position of the occurrence of the failure.
-
-Instance Variables:
-	message	<String>	The error message of this failure.
-	position	<Integer>	The position of this failure in the input stream.
-'>
+    <comment: 'The failure object in PetitParser. It is the only class that responds to #isPetitFailure with true. It contains an error message and a position of the occurrence of the failure.Instance Variables:	message	<String>	The error message of this failure.	position	<Integer>	The position of this failure in the input stream.'>
 
     PPFailure class >> message: aString at: anInteger [
 	<category: 'instance creation'>
@@ -510,9 +552,19 @@ Instance Variables:
 	<category: 'parsing'>
 	| result |
 	result := OrderedCollection new.
+	self matchingRangesIn: anObject do: [:value | result addLast: value].
+	^result
+    ]
+
+    matchingRangesIn: anObject do: aBlock [
+	"Search anObject repeatedly for the matches of the receiver.  Answer an OrderedCollection of ranges of each match (index of first character to: index of last character)."
+
+	<category: 'parsing'>
+	| result |
+	result := OrderedCollection new.
 	[:stream | stream position + 1] asParser , self 
 	    , [:stream | stream position] asParser matchesIn: anObject
-		do: [:value | result addLast: (value first to: value last)].
+		do: [:value | aBlock value: (value first to: value last)].
 	^result
     ]
 
@@ -577,7 +629,7 @@ Instance Variables:
 	"Answer a new parser that parses the receiver, if possible."
 
 	<category: 'operations'>
-	^self / nil asParser
+	^PPOptionalParser on: self
     ]
 
     parse: anObject [
@@ -592,7 +644,7 @@ Instance Variables:
 
 	<category: 'parsing'>
 	| result |
-	result := self parseOn: anObject asPetitStream.
+	result := self parse: anObject.
 	result isPetitFailure ifFalse: [^result].
 	aBlock numArgs = 0 ifTrue: [^aBlock value].
 	aBlock numArgs = 1 ifTrue: [^aBlock value: result].
@@ -756,6 +808,13 @@ Instance Variables:
 				    addFirst: each;
 				    yourself])).
 	^parser => [:rest | rest asArray]
+    ]
+
+    times: anInteger [
+	"Answer a new parser that parses the receiver exactly anInteger times."
+
+	<category: 'operations'>
+	^self min: anInteger max: anInteger
     ]
 
     token [
@@ -1365,11 +1424,6 @@ PPDelegateParser subclass: PPNotParser [
     <category: 'PetitParser-Parsers'>
     <comment: 'The not-predicate, a parser that succeeds whenever its delegate does not, but consumes no input [Parr 1994, 1995].'>
 
-    not [
-	<category: 'operations'>
-	^parser
-    ]
-
     parseOn: aStream [
 	<category: 'parsing'>
 	| element position |
@@ -1378,6 +1432,21 @@ PPDelegateParser subclass: PPNotParser [
 	aStream position: position.
 	^element isPetitFailure 
 	    ifFalse: [PPFailure message: '' at: aStream position]
+    ]
+]
+
+
+
+PPDelegateParser subclass: PPOptionalParser [
+    
+    <category: 'PetitParser-Parsers'>
+    <comment: nil>
+
+    parseOn: aStream [
+	<category: 'parsing'>
+	| element |
+	element := parser parseOn: aStream.
+	^element isPetitFailure ifFalse: [^element]
     ]
 ]
 
@@ -1768,7 +1837,7 @@ PPLiteralParser subclass: PPLiteralObjectParser [
 
     parseOn: aStream [
 	<category: 'parsing'>
-	^(aStream atEnd not and: [aStream peek = literal]) 
+	^(aStream atEnd not and: [literal = aStream uncheckedPeek]) 
 	    ifFalse: [PPFailure message: message at: aStream position]
 	    ifTrue: [aStream next]
     ]
@@ -1804,9 +1873,16 @@ PPLiteralParser subclass: PPLiteralSequenceParser [
 	| position result |
 	position := aStream position.
 	result := aStream next: size.
-	result = literal ifTrue: [^result].
+	literal = result ifTrue: [^result].
 	aStream position: position.
 	^PPFailure message: message at: aStream position
+    ]
+
+    size [
+	"Answer the sequence size of the receiver."
+
+	<category: 'accessing'>
+	^size
     ]
 ]
 
@@ -1931,62 +2007,69 @@ PPPredicateParser subclass: PPPredicateObjectParser [
 
     PPPredicateObjectParser class >> blank [
 	<category: 'factory-chars'>
-	^self anyOf: (String with: Character space with: Character tab)
+	^self chars: (String with: Character space with: Character tab)
+	    message: 'blank expected'
     ]
 
     PPPredicateObjectParser class >> char: aCharacter [
 	<category: 'factory-chars'>
 	^self expect: aCharacter
+	    message: (String 
+		    with: $"
+		    with: aCharacter
+		    with: $") , ' expected'
     ]
 
-    PPPredicateObjectParser class >> control [
+    PPPredicateObjectParser class >> char: aCharacter message: aString [
 	<category: 'factory-chars'>
-	^self 
-	    on: [:char | char asInteger < 32]
-	    message: 'control character expected'
-	    negated: [:char | char asInteger >= 32]
-	    message: 'no control character expected'
+	^self expect: aCharacter message: aString
+    ]
+
+    PPPredicateObjectParser class >> chars: aCollection message: aString [
+	<category: 'factory-chars'>
+	^self on: (PPCharSetPredicate on: [:char | aCollection includes: char])
+	    message: aString
     ]
 
     PPPredicateObjectParser class >> cr [
 	<category: 'factory-chars'>
-	^self char: Character cr
+	^self char: Character cr message: 'carriage return expected'
     ]
 
     PPPredicateObjectParser class >> digit [
 	<category: 'factory-chars'>
-	^self 
-	    on: [:char | char isDigit]
+	^self on: (PPCharSetPredicate on: [:char | char isDigit])
 	    message: 'digit expected'
-	    negated: [:char | char isDigit not]
-	    message: 'no digit expected'
     ]
 
     PPPredicateObjectParser class >> expect: anObject [
 	<category: 'factory-objects'>
+	^self expect: anObject message: anObject printString , ' expected'
+    ]
+
+    PPPredicateObjectParser class >> expect: anObject message: aString [
+	<category: 'factory-objects'>
 	^self 
 	    on: [:each | each = anObject]
-	    message: anObject printString , ' expected'
+	    message: aString
 	    negated: [:each | each ~= anObject]
-	    message: anObject printString , ' not expected'
+	    message: 'no ' , aString
     ]
 
     PPPredicateObjectParser class >> hex [
 	<category: 'factory-chars'>
-	^self on: 
-		[:char | 
-		(char between: $0 and: $9) 
-		    or: [(char between: $a and: $f) or: [char between: $A and: $F]]]
+	^self 
+	    on: (PPCharSetPredicate on: 
+			[:char | 
+			(char between: $0 and: $9) 
+			    or: [(char between: $a and: $f) or: [char between: $A and: $F]]])
 	    message: 'hex digit expected'
     ]
 
     PPPredicateObjectParser class >> letter [
 	<category: 'factory-chars'>
-	^self 
-	    on: [:char | char isLetter]
+	^self on: (PPCharSetPredicate on: [:char | char isLetter])
 	    message: 'letter expected'
-	    negated: [:char | char isLetter not]
-	    message: 'no letter expected'
     ]
 
     PPPredicateObjectParser class >> lf [
@@ -1996,16 +2079,14 @@ PPPredicateParser subclass: PPPredicateObjectParser [
 
     PPPredicateObjectParser class >> lowercase [
 	<category: 'factory-chars'>
-	^self 
-	    on: [:char | char isLowercase]
+	^self on: (PPCharSetPredicate on: [:char | char isLowercase])
 	    message: 'lowercase letter expected'
-	    negated: [:char | char isLowercase not]
-	    message: 'no lowercase letter expected'
     ]
 
     PPPredicateObjectParser class >> newline [
 	<category: 'factory-chars'>
-	^self anyOf: (String with: Character cr with: Character lf)
+	^self chars: (String with: Character cr with: Character lf)
+	    message: 'newline expected'
     ]
 
     PPPredicateObjectParser class >> on: aBlock message: aString [
@@ -2028,39 +2109,31 @@ PPPredicateParser subclass: PPPredicateObjectParser [
 
     PPPredicateObjectParser class >> punctuation [
 	<category: 'factory-chars'>
-	^self anyOf: '.,"''?!;:#$%&()*+-/<>=@[]\^_{}|~'
+	^self chars: '.,"''?!;:#$%&()*+-/<>=@[]\^_{}|~'
+	    message: 'punctuation expected'
     ]
 
     PPPredicateObjectParser class >> space [
 	<category: 'factory-chars'>
-	^self 
-	    on: [:char | char isSeparator]
+	^self on: (PPCharSetPredicate on: [:char | char isSeparator])
 	    message: 'separator expected'
-	    negated: [:char | char isSeparator not]
-	    message: 'no separator expected'
     ]
 
     PPPredicateObjectParser class >> tab [
 	<category: 'factory-chars'>
-	^self char: Character tab
+	^self char: Character tab message: 'tab expected'
     ]
 
     PPPredicateObjectParser class >> uppercase [
 	<category: 'factory-chars'>
-	^self 
-	    on: [:char | char isUppercase]
+	^self on: (PPCharSetPredicate on: [:char | char isUppercase])
 	    message: 'uppercase letter expected'
-	    negated: [:char | char isUppercase not]
-	    message: 'no uppercase letter expected'
     ]
 
     PPPredicateObjectParser class >> word [
 	<category: 'factory-chars'>
-	^self 
-	    on: [:each | each isAlphaNumeric]
+	^self on: (PPCharSetPredicate on: [:char | char isAlphaNumeric])
 	    message: 'letter or digit expected'
-	    negated: [:each | each isAlphaNumeric not]
-	    message: 'no letter or digit expected'
     ]
 
     initializeOn: aBlock message: aString negated: aNegatedBlock message: aNegatedString [
@@ -2084,7 +2157,7 @@ PPPredicateParser subclass: PPPredicateObjectParser [
 
     parseOn: aStream [
 	<category: 'parsing'>
-	^(aStream atEnd not and: [predicate value: aStream peek]) 
+	^(aStream atEnd not and: [predicate value: aStream uncheckedPeek]) 
 	    ifFalse: [PPFailure message: predicateMessage at: aStream position]
 	    ifTrue: [aStream next]
     ]
