@@ -39,12 +39,21 @@ TestCase subclass: PPAbstractParseTest [
 
     assert: aParser fail: aCollection [
 	<category: 'utilities'>
+	self 
+	    assert: aParser
+	    fail: aCollection
+	    end: 0
+    ]
+
+    assert: aParser fail: aCollection end: anInteger [
+	<category: 'utilities'>
 	| stream result |
-	self assert: aParser isPetitParser.
+	self assert: aParser isPetitParser description: 'Parser invalid'.
 	stream := aCollection asPetitStream.
 	result := aParser parse: stream.
-	self assert: result isPetitFailure.
-	self assert: stream position = 0
+	self assert: result isPetitFailure description: 'Parser did not fail'.
+	self assert: stream position = anInteger
+	    description: 'Parser failed at wrong position'
     ]
 
     assert: aParser parse: aCollection [
@@ -77,13 +86,14 @@ TestCase subclass: PPAbstractParseTest [
     assert: aParser parse: aParseObject to: aTargetObject end: anInteger [
 	<category: 'utilities'>
 	| stream result |
-	self assert: aParser isPetitParser.
+	self assert: aParser isPetitParser description: 'Parser invalid'.
 	stream := aParseObject asPetitStream.
 	result := aParser parse: stream.
 	aTargetObject isNil 
 	    ifTrue: [self deny: result isPetitFailure]
 	    ifFalse: [self assert: result = aTargetObject].
 	self assert: stream position = anInteger
+	    description: 'Parser accepted at wrong position'
     ]
 
     assert: aParser parse: aParserObject toToken: from stop: to [
@@ -1351,6 +1361,7 @@ PPAbstractParseTest subclass: PPExtensionTest [
 	self assert: stream class = PPStream.
 	self assert: stream printString = '·abc'.
 	self assert: stream peek = $a.
+	self assert: stream uncheckedPeek = $a.
 	self assert: stream next = $a.
 	self assert: stream printString = 'a·bc'.
 	self assert: stream asPetitStream = stream
@@ -1552,6 +1563,118 @@ PPAbstractParseTest subclass: PPMappingTest [
 	    assert: parser
 	    parse: #(#a #b #c)
 	    to: #(#c #b #a)
+    ]
+]
+
+
+
+PPAbstractParseTest subclass: PPObjectTest [
+    
+    <comment: nil>
+    <category: 'PetitTests-Tests'>
+
+    number [
+	<category: 'parsers'>
+	^PPPredicateObjectParser on: [:each | each isNumber]
+	    message: 'number expected'
+    ]
+
+    string [
+	<category: 'parsers'>
+	^PPPredicateObjectParser on: [:each | each isString]
+	    message: 'string expected'
+    ]
+
+    testChoice [
+	<category: 'testing-operators'>
+	| parser |
+	parser := self number / self string.
+	self 
+	    assert: parser
+	    parse: #(123)
+	    to: 123.
+	self 
+	    assert: parser
+	    parse: #('abc')
+	    to: 'abc'
+    ]
+
+    testFibonacci [
+	"This parser accepts fibonacci sequences with arbitrary start pairs."
+
+	<category: 'testing-fancy'>
+	| parser |
+	parser := ((self number , self number) end 
+		    => [:pair | pair first + pair last]) 
+			/ ((self number , (self number , self number) and) >< 
+				    [:stream :continuation | 
+				    | result |
+				    result := continuation value.
+				    (result isPetitFailure 
+					or: [result first + result last first ~= result last last]) 
+					    ifFalse: [parser parseOn: stream]
+					    ifTrue: [PPFailure message: 'invalid fibonacci sequence' at: stream position]]).
+	self 
+	    assert: parser
+	    parse: #(1 1)
+	    to: 2.
+	self 
+	    assert: parser
+	    parse: #(1 1 2)
+	    to: 3.
+	self 
+	    assert: parser
+	    parse: #(1 1 2 3)
+	    to: 5.
+	self 
+	    assert: parser
+	    parse: #(1 1 2 3 5)
+	    to: 8.
+	self 
+	    assert: parser
+	    parse: #(1 1 2 3 5 8)
+	    to: 13.
+	self 
+	    assert: parser
+	    parse: #(1 1 2 3 5 8 13)
+	    to: 21.
+	self assert: parser fail: #().
+	self assert: parser fail: #(1).
+	self 
+	    assert: parser
+	    fail: #(1 2 3 4)
+	    end: 2
+    ]
+
+    testNumber [
+	<category: 'testing'>
+	self 
+	    assert: self number
+	    parse: #(123)
+	    to: 123.
+	self assert: self number fail: #('abc')
+    ]
+
+    testSequence [
+	<category: 'testing-operators'>
+	| parser |
+	parser := self number , self string.
+	self 
+	    assert: parser
+	    parse: #(123 'abc')
+	    to: #(123 'abc').
+	self assert: parser fail: #(123 456).
+	self assert: parser fail: #('abc' 'def').
+	self assert: parser fail: #('abc' 123)
+    ]
+
+    testString [
+	<category: 'testing'>
+	self 
+	    assert: self string
+	    parse: #('abc')
+	    to: 'abc'.
+	self assert: self string fail: #(123)
     ]
 ]
 
@@ -1858,6 +1981,7 @@ PPAbstractParseTest subclass: PPParserTest [
 	| parser |
 	parser := PPLiteralSequenceParser on: 'abc'
 		    message: 'sequence "abc" expected'.
+	self assert: parser size = 3.
 	self assert: parser literal = 'abc'.
 	self assert: parser message = 'sequence "abc" expected'.
 	self 
@@ -2109,9 +2233,7 @@ PPAbstractParseTest subclass: PPParserTest [
 	    parse: 'foobaz'
 	    to: #('foo' nil)
 	    end: 3.
-	self assert: parser fail: 'foobar'.
-	parser := 'foo' asParser.
-	self assert: parser not not = parser
+	self assert: parser fail: 'foobar'
     ]
 
     testOptional [
@@ -2787,6 +2909,23 @@ PPAbstractParseTest subclass: PPParserTest [
 	    end: 3
     ]
 
+    testTimes [
+	<category: 'testing'>
+	| parser |
+	parser := $a asParser times: 2.
+	self assert: parser fail: ''.
+	self assert: parser fail: 'a'.
+	self 
+	    assert: parser
+	    parse: 'aa'
+	    to: #($a $a).
+	self 
+	    assert: parser
+	    parse: 'aaa'
+	    to: #($a $a)
+	    end: 2
+    ]
+
     testToken [
 	<category: 'testing'>
 	| parser |
@@ -3269,24 +3408,6 @@ PPAbstractParseTest subclass: PPPredicateTest [
 	    parse: '**'
 	    to: $*
 	    end: 1.
-	self assert: parser fail: ''.
-	self assert: parser fail: '1'.
-	self assert: parser fail: 'a'
-    ]
-
-    testControl [
-	<category: 'testing-chars'>
-	| parser |
-	parser := #control asParser.
-	self assertCharacterSets: parser.
-	self 
-	    assert: parser
-	    parse: (String with: Character cr)
-	    to: Character cr.
-	self 
-	    assert: parser
-	    parse: (String with: Character tab)
-	    to: Character tab.
 	self assert: parser fail: ''.
 	self assert: parser fail: '1'.
 	self assert: parser fail: 'a'
