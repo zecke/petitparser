@@ -1128,7 +1128,7 @@ PPCompositeParserTest subclass: PPLambdaParserTest [
 
     testFalse [
 	<category: 'testing-curch'>
-	self assert: self parserClass false = #('x' #('y' 'y'))
+	self assert: self parserClass lambdaFalse = #('x' #('y' 'y'))
     ]
 
     testIfThenElse [
@@ -1225,7 +1225,7 @@ PPCompositeParserTest subclass: PPLambdaParserTest [
 
     testTrue [
 	<category: 'testing-curch'>
-	self assert: self parserClass true = #('x' #('y' 'x'))
+	self assert: self parserClass lambdaTrue = #('x' #('y' 'x'))
     ]
 
     testVariable [
@@ -3983,7 +3983,7 @@ PPCompositeParser subclass: PPLambdaParser [
 	^self parse: '\p.\q.((p q) p)'
     ]
 
-    PPLambdaParser class >> false [
+    PPLambdaParser class >> lambdaFalse [
 	<category: 'curch-booleans'>
 	^self parse: '\x.\y.y'
     ]
@@ -4003,7 +4003,7 @@ PPCompositeParser subclass: PPLambdaParser [
 	^self parse: '\p.\q.((p p) q)'
     ]
 
-    PPLambdaParser class >> true [
+    PPLambdaParser class >> lambdaTrue [
 	<category: 'curch-booleans'>
 	^self parse: '\x.\y.x'
     ]
