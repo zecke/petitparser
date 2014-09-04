@@ -1498,18 +1498,21 @@ Instance Variables:
 
     parseOn: aStream [
 	<category: 'parsing'>
-	| start element elements |
+	| start element elements count |
 	start := aStream position.
 	elements := OrderedCollection new.
-	[elements size < min] whileTrue: 
+	count := 0.
+	[count < min] whileTrue: 
 		[(element := parser parseOn: aStream) isPetitFailure 
 		    ifTrue: 
 			[aStream position: start.
 			^element].
+		count := count + 1.
 		elements addLast: element].
-	[elements size < max] whileTrue: 
+	[count < max] whileTrue: 
 		[(element := parser parseOn: aStream) isPetitFailure 
 		    ifTrue: [^elements asArray].
+		count := count + 1.
 		elements addLast: element].
 	^elements asArray
     ]
