@@ -87,7 +87,7 @@ ReadStream subclass: PPStream [
 	"An improved version of peek, that is slightly faster than the built in version."
 
 	<category: 'accessing'>
-	^self atEnd ifFalse: [collection at: self position + 1]
+	^ptr > endPtr ifFalse: [collection at: ptr]
     ]
 
     position: anInteger [
