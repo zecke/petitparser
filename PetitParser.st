@@ -77,9 +77,9 @@ ReadStream subclass: PPStream [
 
 	<category: 'accessing'>
 	| answer endPosition |
-	endPosition := self position + anInteger min: self size.
-	answer := collection copyFrom: self position + 1 to: endPosition.
-	self position: endPosition.
+	endPosition := (ptr - 1 + anInteger) min: endPtr.
+	answer := collection copyFrom: ptr to: endPosition.
+	ptr := endPosition + 1.
 	^answer
     ]
 
