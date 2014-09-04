@@ -113,6 +113,14 @@ ReadStream subclass: PPStream [
 	<category: 'accessing'>
 	^collection at: ptr
     ]
+
+    pointer [
+	^ptr
+    ]
+
+    pointer: aPtr [
+	ptr := aPtr
+    ]
 ]
 
 
@@ -964,10 +972,10 @@ PPDelegateParser subclass: PPAndParser [
 
     parseOn: aStream [
 	<category: 'parsing'>
-	| element position |
-	position := aStream position.
+	| element pointer |
+	pointer := aStream pointer.
 	element := parser parseOn: aStream.
-	aStream position: position.
+	aStream pointer: pointer.
 	^element
     ]
 ]
@@ -1102,12 +1110,12 @@ PPDelegateParser subclass: PPEndOfInputParser [
 
     parseOn: aStream [
 	<category: 'parsing'>
-	| position result |
-	position := aStream position.
+	| pointer result |
+	pointer := aStream pointer.
 	result := parser parseOn: aStream.
 	(result isPetitFailure or: [aStream atEnd]) ifTrue: [^result].
 	result := PPFailure message: 'end of input expected' at: aStream position.
-	aStream position: position.
+	aStream pointer: pointer.
 	^result
     ]
 ]
@@ -1317,18 +1325,18 @@ PPDelegateParser subclass: PPFlattenParser [
 
     parseOn: aStream [
 	<category: 'parsing'>
-	| start element stop |
-	start := aStream position.
+	| startPtr element stopPtr |
+	startPtr := aStream pointer.
 	element := parser parseOn: aStream.
 	element isPetitFailure 
 	    ifTrue: 
-		[aStream position: start.
+		[aStream pointer: startPtr.
 		^element].
-	stop := aStream position.
+	stopPtr := aStream pointer.
 	^self 
 	    create: aStream collection
-	    start: start + 1
-	    stop: stop
+	    start: startPtr
+	    stop: stopPtr - 1
     ]
 ]
 
@@ -1426,12 +1434,12 @@ PPDelegateParser subclass: PPNotParser [
 
     parseOn: aStream [
 	<category: 'parsing'>
-	| element position |
-	position := aStream position.
+	| element pointer |
+	pointer := aStream pointer.
 	element := parser parseOn: aStream.
-	aStream position: position.
+	aStream pointer: pointer.
 	^element isPetitFailure 
-	    ifFalse: [PPFailure message: '' at: aStream position]
+	    ifFalse: [PPFailure message: '' at: aStream pointer - 1]
     ]
 ]
 
@@ -1498,14 +1506,14 @@ Instance Variables:
 
     parseOn: aStream [
 	<category: 'parsing'>
-	| start element elements count |
-	start := aStream position.
+	| startPtr element elements count |
+	startPtr := aStream pointer.
 	elements := OrderedCollection new.
 	count := 0.
 	[count < min] whileTrue: 
 		[(element := parser parseOn: aStream) isPetitFailure 
 		    ifTrue: 
-			[aStream position: start.
+			[aStream pointer: startPtr.
 			^element].
 		count := count + 1.
 		elements addLast: element].
@@ -1555,13 +1563,13 @@ PPDelegateParser subclass: PPTrimmingParser [
 
     parseOn: aStream [
 	<category: 'parsing'>
-	| position element |
-	position := aStream position.
+	| pointer element |
+	pointer := aStream pointer.
 	[(trimmer parseOn: aStream) isPetitFailure] whileFalse.
 	element := parser parseOn: aStream.
 	element isPetitFailure 
 	    ifTrue: 
-		[aStream position: position.
+		[aStream pointer: pointer.
 		^element].
 	[(trimmer parseOn: aStream) isPetitFailure] whileFalse.
 	^element
@@ -1736,8 +1744,8 @@ PPListParser subclass: PPSequenceParser [
 	"This is optimized code that avoids unnecessary block activations, do not change."
 
 	<category: 'parsing'>
-	| start elements element |
-	start := aStream position.
+	| startPtr elements element |
+	startPtr := aStream pointer.
 	elements := Array new: parsers size.
 	1 to: parsers size
 	    do: 
@@ -1745,7 +1753,7 @@ PPListParser subclass: PPSequenceParser [
 		element := (parsers at: index) parseOn: aStream.
 		element isPetitFailure 
 		    ifTrue: 
-			[aStream position: start.
+			[aStream pointer: startPtr.
 			^element].
 		elements at: index put: element].
 	^elements
@@ -1873,12 +1881,12 @@ PPLiteralParser subclass: PPLiteralSequenceParser [
 
     parseOn: aStream [
 	<category: 'parsing'>
-	| position result |
-	position := aStream position.
+	| pointer result |
+	pointer := aStream pointer.
 	result := aStream next: size.
 	literal = result ifTrue: [^result].
-	aStream position: position.
-	^PPFailure message: message at: aStream position
+	aStream pointer: pointer.
+	^PPFailure message: message at: aStream pointer - 1
     ]
 
     size [
@@ -1920,10 +1928,10 @@ Instance Variables:
 
     parseOn: aStream [
 	<category: 'parsing'>
-	| position result |
-	position := aStream position.
+	| pointer result |
+	pointer := aStream pointer.
 	result := block value: aStream.
-	result isPetitFailure ifTrue: [aStream position: position].
+	result isPetitFailure ifTrue: [aStream pointer: pointer].
 	^result
     ]
 ]
@@ -2220,12 +2228,12 @@ Instance Variables:
 
     parseOn: aStream [
 	<category: 'parsing'>
-	| position result |
-	position := aStream position.
+	| pointer result |
+	pointer := aStream pointer.
 	result := aStream next: size.
 	(result size = size and: [predicate value: result]) ifTrue: [^result].
-	aStream position: position.
-	^PPFailure message: predicateMessage at: aStream position
+	aStream pointer: pointer.
+	^PPFailure message: predicateMessage at: aStream pointer - 1
     ]
 
     size [
